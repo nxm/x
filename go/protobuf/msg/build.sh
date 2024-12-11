@@ -1,0 +1,1 @@
+protoc --proto_path=. --go_out=. --go_opt=Mmsg.proto=. msg.proto

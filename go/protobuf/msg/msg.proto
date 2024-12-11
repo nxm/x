@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+// package name, this will be saved in the resulting go-file
+package msg;
+
+// Define the Go package import path and package name
+option go_package = "git.jakub.app/jakub/X/protobuf/msg";
+
+message msg {
+  // type field_name = field_number
+  string key = 1;
+  // repeated means slice
+  repeated int64 value = 2;
+}
+/*
+ In the third version, there are no required fields and extensions.
+ Instead of extensions, the type `Any` is implemented (more on that later)
+*/

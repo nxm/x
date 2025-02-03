@@ -7,5 +7,5 @@ curl -X POST http://localhost:1323/translate -H 'Content-Type: application/json'
 ```
 
 ## TODO:
-- [ ] Import translated words / sentences to airtable database
+- [ ] Import translated words / sentences to supabase
 - [ ] Add an export to anki format (maybe it should be as a separate program or with additional to run as a cronjob)

@@ -56,12 +56,11 @@ func main() {
 		type TranslateRequest struct {
 			Input string `json:"input"`
 		}
-        var req TranslateRequest
-        if err := c.Bind(&req); err != nil {
-            log.Error().Err(err).Msg("can't bind request")
-            return c.JSON(http.StatusBadRequest, "invalid request")
-        }
-
+		var req TranslateRequest
+		if err := c.Bind(&req); err != nil {
+			log.Error().Err(err).Msg("can't bind request")
+			return c.JSON(http.StatusBadRequest, "invalid request")
+		}
 
 		finalPrompt := strings.Replace(PROMPT_FORMAT, "%INPUT%", req.Input, -1)
 		completionRequest := llm.CompletionRequest{

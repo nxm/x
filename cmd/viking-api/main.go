@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"net/http"
 
@@ -20,7 +19,6 @@ var (
 type Server struct {
 	router        *mux.Router
 	discordModule *discord.Discord
-	kvService     kuchniaviking.KuchniaVikinga
 }
 
 type APIResponse struct {
@@ -56,20 +54,9 @@ type IngredientData struct {
 }
 
 func NewServer() (*Server, error) {
-	kvService, err := kuchniaviking.New()
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize kuchnia viking: %w", err)
-	}
-
-	discordModule, err := discord.New()
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize discord module: %w", err)
-	}
 
 	server := &Server{
 		router:        mux.NewRouter(),
-		discordModule: discordModule,
-		kvService:     kvService,
 	}
 
 	server.setupRoutes()
@@ -82,7 +69,12 @@ func (s *Server) setupRoutes() {
 }
 
 func (s *Server) GetDeliveriesHandler(w http.ResponseWriter, r *http.Request) {
-	ids, err := s.kvService.GetActiveIds()
+	kvService, err := kuchniaviking.New()
+	if err != nil {
+		s.respondWithError(w, http.StatusInternalServerError, "failed to initialize KuchniaVikinga")
+		return
+	}
+	ids, err := kvService.GetActiveIds()
 	if err != nil {
 		s.respondWithError(w, http.StatusInternalServerError, "Failed to get active orders")
 		return
@@ -93,13 +85,13 @@ func (s *Server) GetDeliveriesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orderDataResp, err := s.kvService.GetOrderData(ids[0])
+	orderDataResp, err := kvService.GetOrderData(ids[0])
 	if err != nil {
 		s.respondWithError(w, http.StatusInternalServerError, "Failed to get order data")
 		return
 	}
 
-	nearestDeliveries, err := s.kvService.GetNearestDeliveries(orderDataResp.Deliveries, 7)
+	nearestDeliveries, err := kvService.GetNearestDeliveries(orderDataResp.Deliveries, 7)
 	if err != nil {
 		s.respondWithError(w, http.StatusInternalServerError, "Failed to get nearest deliveries")
 		return
@@ -107,7 +99,7 @@ func (s *Server) GetDeliveriesHandler(w http.ResponseWriter, r *http.Request) {
 
 	var response []DeliveryResponse
 	for _, delivery := range nearestDeliveries {
-		deliveryInfo, err := s.kvService.GetDeliveryInfo(delivery.DeliveryID)
+		deliveryInfo, err := kvService.GetDeliveryInfo(delivery.DeliveryID)
 		if err != nil {
 			log.Error().Err(err).Int("deliveryId", delivery.DeliveryID).Msg("Failed to get delivery info")
 			continue
@@ -124,7 +116,12 @@ func (s *Server) GetDeliveriesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetMenuHTMLHandler(w http.ResponseWriter, r *http.Request) {
-	ids, err := s.kvService.GetActiveIds()
+	kvService, err := kuchniaviking.New()
+	if err != nil {
+		s.respondWithError(w, http.StatusInternalServerError, "failed to initialize KuchniaVikinga")
+		return
+	}
+	ids, err := kvService.GetActiveIds()
 	if err != nil {
 		http.Error(w, "Failed to get active orders", http.StatusInternalServerError)
 		return
@@ -135,13 +132,13 @@ func (s *Server) GetMenuHTMLHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orderDataResp, err := s.kvService.GetOrderData(ids[0])
+	orderDataResp, err := kvService.GetOrderData(ids[0])
 	if err != nil {
 		http.Error(w, "Failed to get order data", http.StatusInternalServerError)
 		return
 	}
 
-	nearestDeliveries, err := s.kvService.GetNearestDeliveries(orderDataResp.Deliveries, 7)
+	nearestDeliveries, err := kvService.GetNearestDeliveries(orderDataResp.Deliveries, 7)
 	if err != nil {
 		http.Error(w, "Failed to get nearest deliveries", http.StatusInternalServerError)
 		return
@@ -149,7 +146,7 @@ func (s *Server) GetMenuHTMLHandler(w http.ResponseWriter, r *http.Request) {
 
 	var deliveriesData []HTMLDeliveryData
 	for _, delivery := range nearestDeliveries {
-		deliveryInfo, err := s.kvService.GetDeliveryInfo(delivery.DeliveryID)
+		deliveryInfo, err := kvService.GetDeliveryInfo(delivery.DeliveryID)
 		if err != nil {
 			log.Error().Err(err).Int("deliveryId", delivery.DeliveryID).Msg("Failed to get delivery info")
 			continue
